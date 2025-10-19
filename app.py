@@ -22,7 +22,8 @@ with col1:
     st.subheader("Configuration")
     reasoning_effort = st.selectbox(
         "Reasoning Effort",
-        ["low", "medium", "high"],
+        ["high", "medium"],
+        index=0,
         help="Controls how many reasoning tokens the model generates"
     )
 
@@ -76,12 +77,17 @@ if st.button("Process PDF", type="primary", use_container_width=True):
             with timer_placeholder.container():
                 st.info("⏱️ Processing...")
             
-            response = openai_client.responses.create(
+            response = openai_client.beta.responses.create(
                 model="gpt-5-pro",
                 reasoning={
                     "effort": reasoning_effort
                 },
-                input=full_prompt,
+                input=[
+                    {
+                        "role": "user",
+                        "content": full_prompt
+                    }
+                ],
                 max_output_tokens=100000
             )
             
