@@ -15,7 +15,7 @@ try:
 except KeyError:
     st.warning("OpenAI API key not found in secrets.")
 
-# Main content
+# Configuration
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -33,7 +33,9 @@ with col2:
 
 st.divider()
 
+# Input section
 st.subheader("Input")
+
 default_prompt = """Instructions: Analyze the situation (historical event, company, policy, or system) using the following structured approach. Answer each section clearly and concisely.
 
 1. Coordination Stack Analysis
@@ -95,10 +97,9 @@ if st.button("Process PDF", type="primary", use_container_width=True):
         start_time = time.time()
         timer_placeholder = st.empty()
         
-        with timer_placeholder.container():
-            st.info("⏱️ Processing...")
-        
         try:
+            timer_placeholder.info("⏱️ Processing...")
+            
             # Extract text from PDF
             pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
             pdf_text = ""
@@ -112,31 +113,21 @@ if st.button("Process PDF", type="primary", use_container_width=True):
             # Combine prompt with extracted text
             full_prompt = f"{user_prompt}\n\n---\n\n{pdf_text}"
             
-            with timer_placeholder.container():
-                st.info("⏱️ Processing...")
-            
-        try:
-            with timer_placeholder.container():
-                st.info("⏱️ Processing...")
-            
+            # Call Responses API
             response = openai_client.responses.create(
                 model="gpt-5-pro",
-                reasoning={
-                    "effort": reasoning_effort
-                },
-                input=[
-                    {
-                        "role": "user",
-                        "content": full_prompt
-                    }
-                ],
+                reasoning={"effort": reasoning_effort},
+                input=[{"role": "user", "content": full_prompt}],
                 max_output_tokens=100000
             )
             
             result = response.output_text
             
             # Extract token usage info
-            reasoning_tokens = response.usage.output_tokens_details.reasoning_tokens if hasattr(response.usage, 'output_tokens_details') else "N/A"
+            reasoning_tokens = "N/A"
+            if hasattr(response.usage, 'output_tokens_details') and hasattr(response.usage.output_tokens_details, 'reasoning_tokens'):
+                reasoning_tokens = response.usage.output_tokens_details.reasoning_tokens
+            
             usage_info = f"Input tokens: {response.usage.input_tokens} | Reasoning tokens: {reasoning_tokens} | Output tokens: {response.usage.output_tokens}"
             
             elapsed_time = time.time() - start_time
@@ -145,16 +136,18 @@ if st.button("Process PDF", type="primary", use_container_width=True):
             with st.expander("📄 Output from GPT-5-Pro", expanded=True):
                 st.markdown(result)
             
-            # Display usage info
             st.caption(usage_info)
-        
+            
         except AttributeError as e:
-            timer_placeholder.error(f"❌ Error after {time.time() - start_time:.2f}s")
-            st.error(f"API Error: The Responses API may not be available. Please ensure you have the latest OpenAI SDK installed: `pip install --upgrade openai`")
+            elapsed_time = time.time() - start_time
+            timer_placeholder.error(f"❌ Error after {elapsed_time:.2f}s")
+            st.error("API Error: The Responses API may not be available. Please upgrade the OpenAI SDK: `pip install --upgrade openai`")
             st.error(f"Technical details: {str(e)}")
         except openai.APIError as e:
-            timer_placeholder.error(f"❌ Error after {time.time() - start_time:.2f}s")
+            elapsed_time = time.time() - start_time
+            timer_placeholder.error(f"❌ Error after {elapsed_time:.2f}s")
             st.error(f"OpenAI API error: {str(e)}")
         except Exception as e:
-            timer_placeholder.error(f"❌ Error after {time.time() - start_time:.2f}s")
+            elapsed_time = time.time() - start_time
+            timer_placeholder.error(f"❌ Error after {elapsed_time:.2f}s")
             st.error(f"An error occurred: {str(e)}")
