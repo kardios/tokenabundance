@@ -95,6 +95,9 @@ if st.button("Process PDF", type="primary", use_container_width=True):
         start_time = time.time()
         timer_placeholder = st.empty()
         
+        with timer_placeholder.container():
+            st.info("⏱️ Processing...")
+        
         try:
             # Extract text from PDF
             pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
