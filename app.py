@@ -112,7 +112,11 @@ if st.button("Process PDF", type="primary", use_container_width=True):
             with timer_placeholder.container():
                 st.info("⏱️ Processing...")
             
-            response = openai_client.beta.responses.create(
+        try:
+            with timer_placeholder.container():
+                st.info("⏱️ Processing...")
+            
+            response = openai_client.responses.create(
                 model="gpt-5-pro",
                 reasoning={
                     "effort": reasoning_effort
@@ -141,6 +145,10 @@ if st.button("Process PDF", type="primary", use_container_width=True):
             # Display usage info
             st.caption(usage_info)
         
+        except AttributeError as e:
+            timer_placeholder.error(f"❌ Error after {time.time() - start_time:.2f}s")
+            st.error(f"API Error: The Responses API may not be available. Please ensure you have the latest OpenAI SDK installed: `pip install --upgrade openai`")
+            st.error(f"Technical details: {str(e)}")
         except openai.APIError as e:
             timer_placeholder.error(f"❌ Error after {time.time() - start_time:.2f}s")
             st.error(f"OpenAI API error: {str(e)}")
