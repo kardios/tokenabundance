@@ -34,10 +34,45 @@ with col2:
 st.divider()
 
 st.subheader("Input")
+default_prompt = """Instructions: Analyze the situation (historical event, company, policy, or system) using the following structured approach. Answer each section clearly and concisely.
+
+1. Coordination Stack Analysis
+Break down the system into four dimensions:
+- Information: How knowledge, signals, and attention flow. Are there bottlenecks, feedback loops, or superior intelligence?
+- Economic: How value, incentives, and resources are distributed. Who benefits? Are incentives aligned or misaligned?
+- Institutional: How rules, hierarchies, and power structures shape action. Are institutions flexible or rigid?
+- Cognitive: How beliefs, legitimacy, and perception evolve. How does psychology affect behavior and outcomes?
+Output Example: 2–4 sentences per dimension, highlighting the key structural drivers.
+
+2. Zero to One Insights
+Identify 2–3 counterintuitive, underappreciated, or hidden truths implied by the situation. These should:
+- Challenge conventional assumptions
+- Reveal drivers of change that are not obvious
+- Highlight leverage opportunities
+Output Example: 1–2 sentences per insight.
+
+3. Leverage Points
+For each insight, identify specific points of intervention in the system where small changes could produce outsized effects. Consider:
+- Rules and constraints
+- Information flows
+- Incentives
+- Feedback loops
+- Perceptions and beliefs
+Output Example: 1–3 concrete interventions per insight, phrased as actionable moves.
+
+4. Strategic Implications
+Synthesize the above into clear, actionable strategy recommendations for a leader, policymaker, or creator. Include:
+- Opportunities for competitive advantage or system improvement
+- How to align incentives, information, and beliefs for maximum effect
+- High-impact moves rather than general observations
+Output Example: 3–5 bullet points of concise, actionable advice.
+
+Tips for Use: Keep language simple and clear; explain complex ideas plainly. Focus on causality, not just description. Always highlight where small interventions have outsized impact."""
+
 user_prompt = st.text_area(
     "Enter your prompt (instructions for the model):",
-    height=100,
-    placeholder="e.g., Summarize this PDF, extract key points, analyze the document..."
+    height=150,
+    value=default_prompt
 )
 
 uploaded_file = st.file_uploader(
