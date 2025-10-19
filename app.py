@@ -1,0 +1,125 @@
+import streamlit as st
+import anthropic
+import openai
+import requests
+
+st.set_page_config(page_title="LLM Text Processor", layout="wide")
+st.title("🤖 LLM Text Processor")
+
+# Sidebar for API keys
+st.sidebar.header("API Configuration")
+anthropic_key = st.sidebar.text_input("Anthropic API Key", type="password", key="anthropic_key")
+openai_key = st.sidebar.text_input("OpenAI API Key", type="password", key="openai_key")
+
+# Initialize API clients
+anthropic_client = None
+openai_client = None
+
+if anthropic_key:
+    anthropic_client = anthropic.Anthropic(api_key=anthropic_key)
+if openai_key:
+    openai_client = openai.OpenAI(api_key=openai_key)
+
+# Main content
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.subheader("Model Selection")
+    model_choice = st.radio(
+        "Choose a model:",
+        ["Claude Opus 4.1", "GPT-5"],
+        help="Select which LLM to use for processing"
+    )
+
+with col2:
+    st.subheader("Configuration")
+    if model_choice == "Claude Opus 4.1":
+        temperature = st.slider("Temperature", 0.0, 2.0, 0.7, step=0.1)
+        max_tokens = st.slider("Max Tokens", 100, 4000, 1500, step=100)
+    else:  # GPT-5
+        reasoning_effort = st.selectbox(
+            "Reasoning Effort",
+            ["minimal", "low", "medium", "high"],
+            help="Controls how many reasoning tokens the model generates"
+        )
+        verbosity = st.selectbox(
+            "Output Verbosity",
+            ["low", "medium", "high"],
+            help="Controls the verbosity of the output"
+        )
+        max_output_tokens = st.slider("Max Output Tokens", 100, 4000, 1500, step=100)
+
+st.divider()
+
+st.subheader("Input")
+user_prompt = st.text_area(
+    "Enter your prompt (instructions for the model):",
+    height=100,
+    placeholder="e.g., Summarize the following text in 3 bullet points..."
+)
+
+text_to_process = st.text_area(
+    "Enter the text to process:",
+    height=200,
+    placeholder="Paste your text here..."
+)
+
+st.divider()
+
+# Process button
+if st.button("Process Text", type="primary", use_container_width=True):
+    if not user_prompt or not text_to_process:
+        st.error("Please provide both a prompt and text to process.")
+    elif model_choice == "Claude Opus 4.1" and not anthropic_client:
+        st.error("Please provide a valid Anthropic API key in the sidebar.")
+    elif model_choice == "GPT-5" and not openai_key:
+        st.error("Please provide a valid OpenAI API key in the sidebar.")
+    else:
+        try:
+            with st.spinner(f"Processing with {model_choice}..."):
+                full_prompt = f"{user_prompt}\n\n---\n\n{text_to_process}"
+                
+                if model_choice == "Claude Opus 4.1":
+                    response = anthropic_client.messages.create(
+                        model="claude-opus-4-1-20250805",
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        messages=[
+                            {"role": "user", "content": full_prompt}
+                        ]
+                    )
+                    result = response.content[0].text
+                    model_display = "Claude Opus 4.1"
+                    usage_info = f"Input tokens: {response.usage.input_tokens} | Output tokens: {response.usage.output_tokens}"
+                
+                else:  # GPT-5
+                    response = openai_client.beta.responses.create(
+                        model="gpt-5",
+                        input=full_prompt,
+                        reasoning={
+                            "effort": reasoning_effort
+                        },
+                        text={
+                            "verbosity": verbosity
+                        },
+                        max_output_tokens=max_output_tokens
+                    )
+                    result = response.output_text
+                    model_display = "GPT-5"
+                    usage_info = None
+            
+            st.success("Processing complete!")
+            
+            with st.expander(f"📄 Output from {model_display}", expanded=True):
+                st.markdown(result)
+            
+            # Display usage info if available
+            if usage_info:
+                st.caption(usage_info)
+        
+        except anthropic.APIError as e:
+            st.error(f"Anthropic API error: {str(e)}")
+        except openai.APIError as e:
+            st.error(f"OpenAI API error: {str(e)}")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
