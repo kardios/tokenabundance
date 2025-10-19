@@ -1,7 +1,7 @@
 import streamlit as st
 import anthropic
 import openai
-import requests
+import time
 
 st.set_page_config(page_title="LLM Text Processor", layout="wide")
 st.title("🤖 LLM Text Processor")
@@ -29,7 +29,7 @@ with col1:
     st.subheader("Model Selection")
     model_choice = st.radio(
         "Choose a model:",
-        ["Claude Opus 4.1", "GPT-5"],
+        ["Claude Opus 4.1", "GPT-5-Pro"],
         help="Select which LLM to use for processing"
     )
 
@@ -37,19 +37,13 @@ with col2:
     st.subheader("Configuration")
     if model_choice == "Claude Opus 4.1":
         temperature = st.slider("Temperature", 0.0, 2.0, 0.7, step=0.1)
-        max_tokens = st.slider("Max Tokens", 100, 4000, 1500, step=100)
-    else:  # GPT-5
+        max_tokens = st.slider("Max Tokens", 100, 100000, 100000, step=1000)
+    else:  # GPT-5-Pro
         reasoning_effort = st.selectbox(
             "Reasoning Effort",
-            ["minimal", "low", "medium", "high"],
+            ["low", "medium", "high"],
             help="Controls how many reasoning tokens the model generates"
         )
-        verbosity = st.selectbox(
-            "Output Verbosity",
-            ["low", "medium", "high"],
-            help="Controls the verbosity of the output"
-        )
-        max_output_tokens = st.slider("Max Output Tokens", 100, 4000, 1500, step=100)
 
 st.divider()
 
@@ -73,9 +67,9 @@ if st.button("Process Text", type="primary", use_container_width=True):
     if not user_prompt or not text_to_process:
         st.error("Please provide both a prompt and text to process.")
     elif model_choice == "Claude Opus 4.1" and not anthropic_client:
-        st.error("Please provide a valid Anthropic API key in the sidebar.")
-    elif model_choice == "GPT-5" and not openai_key:
-        st.error("Please provide a valid OpenAI API key in the sidebar.")
+        st.error("Please provide a valid Anthropic API key in secrets.")
+    elif model_choice == "GPT-5" and not openai_client:
+        st.error("Please provide a valid OpenAI API key in secrets.")
     else:
         try:
             with st.spinner(f"Processing with {model_choice}..."):
@@ -94,30 +88,29 @@ if st.button("Process Text", type="primary", use_container_width=True):
                     model_display = "Claude Opus 4.1"
                     usage_info = f"Input tokens: {response.usage.input_tokens} | Output tokens: {response.usage.output_tokens}"
                 
-                else:  # GPT-5
-                    response = openai_client.beta.responses.create(
-                        model="gpt-5",
-                        input=full_prompt,
+                else:  # GPT-5-Pro
+                    response = openai_client.responses.create(
+                        model="gpt-5-pro",
                         reasoning={
                             "effort": reasoning_effort
                         },
-                        text={
-                            "verbosity": verbosity
-                        },
-                        max_output_tokens=max_output_tokens
+                        input=full_prompt,
+                        max_output_tokens=100000
                     )
                     result = response.output_text
-                    model_display = "GPT-5"
-                    usage_info = None
+                    model_display = "GPT-5-Pro"
+                    
+                    # Extract token usage info
+                    reasoning_tokens = response.usage.output_tokens_details.reasoning_tokens if hasattr(response.usage, 'output_tokens_details') else "N/A"
+                    usage_info = f"Input tokens: {response.usage.input_tokens} | Reasoning tokens: {reasoning_tokens} | Output tokens: {response.usage.output_tokens}"
             
             st.success("Processing complete!")
             
             with st.expander(f"📄 Output from {model_display}", expanded=True):
                 st.markdown(result)
             
-            # Display usage info if available
-            if usage_info:
-                st.caption(usage_info)
+            # Display usage info
+            st.caption(usage_info)
         
         except anthropic.APIError as e:
             st.error(f"Anthropic API error: {str(e)}")
