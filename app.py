@@ -6,19 +6,21 @@ import requests
 st.set_page_config(page_title="LLM Text Processor", layout="wide")
 st.title("🤖 LLM Text Processor")
 
-# Sidebar for API keys
-st.sidebar.header("API Configuration")
-anthropic_key = st.sidebar.text_input("Anthropic API Key", type="password", key="anthropic_key")
-openai_key = st.sidebar.text_input("OpenAI API Key", type="password", key="openai_key")
-
-# Initialize API clients
+# Initialize API clients from Streamlit Secrets
 anthropic_client = None
 openai_client = None
 
-if anthropic_key:
+try:
+    anthropic_key = st.secrets["ANTHROPIC_API_KEY"]
     anthropic_client = anthropic.Anthropic(api_key=anthropic_key)
-if openai_key:
+except KeyError:
+    st.warning("Anthropic API key not found in secrets.")
+
+try:
+    openai_key = st.secrets["OPENAI_API_KEY"]
     openai_client = openai.OpenAI(api_key=openai_key)
+except KeyError:
+    st.warning("OpenAI API key not found in secrets.")
 
 # Main content
 col1, col2 = st.columns([1, 1])
