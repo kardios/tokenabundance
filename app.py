@@ -1,7 +1,6 @@
 import streamlit as st
 import openai
 import time
-import fitz  # PyMuPDF
 
 st.set_page_config(page_title="LLM Text Processor", layout="wide")
 st.title("🤖 LLM Text Processor")
@@ -77,20 +76,20 @@ user_prompt = st.text_area(
     value=default_prompt
 )
 
-uploaded_file = st.file_uploader(
-    "Upload a PDF file to process:",
-    type="pdf",
-    help="Select a PDF file to extract text from"
+text_input = st.text_area(
+    "Enter text to analyze:",
+    height=200,
+    placeholder="Paste the text you want to analyze here..."
 )
 
 st.divider()
 
 # Process button
-if st.button("Process PDF", type="primary", use_container_width=True):
+if st.button("Process Text", type="primary", use_container_width=True):
     if not user_prompt:
         st.error("Please provide a prompt.")
-    elif not uploaded_file:
-        st.error("Please upload a PDF file.")
+    elif not text_input:
+        st.error("Please enter text to analyze.")
     elif not openai_client:
         st.error("Please provide a valid OpenAI API key in secrets.")
     else:
@@ -100,18 +99,8 @@ if st.button("Process PDF", type="primary", use_container_width=True):
         try:
             timer_placeholder.info("⏱️ Processing...")
             
-            # Extract text from PDF
-            pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-            pdf_text = ""
-            
-            for page_num in range(len(pdf_document)):
-                page = pdf_document[page_num]
-                pdf_text += page.get_text()
-            
-            pdf_document.close()
-            
-            # Combine prompt with extracted text
-            full_prompt = f"{user_prompt}\n\n---\n\n{pdf_text}"
+            # Combine prompt with user text input
+            full_prompt = f"{user_prompt}\n\n---\n\n{text_input}"
             
             # Call Responses API
             response = openai_client.responses.create(
